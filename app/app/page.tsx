@@ -17,7 +17,11 @@ import {
   Wallet,
   ArrowUpRight,
   ArrowDownRight,
-  X
+  X,
+  Upload,
+  AlertTriangle,
+  Info,
+  CheckCircle
 } from 'lucide-react'
 
 // Mock data for bonds
@@ -35,14 +39,18 @@ const MOCK_BONDS = [
     yieldType: 'Fixed',
     collateral: 500000,
     collateralToken: 'SOL',
+    collateralRatio: 150,
     volume24h: 2500000,
     maturity: '2025-12-31',
+    duration: 12,
     totalSupply: 10000,
     outstanding: 7500,
     issuer: 'Jupiter DAO',
     paymentFrequency: 'Quarterly',
     minInvestment: 100,
     rating: 'AAA',
+    liquidationThreshold: 120,
+    riskScore: 'Low',
   },
   {
     id: '2',
@@ -57,14 +65,18 @@ const MOCK_BONDS = [
     yieldType: 'Variable',
     collateral: 250000,
     collateralToken: 'mSOL',
+    collateralRatio: 175,
     volume24h: 1200000,
     maturity: '2026-06-30',
+    duration: 6,
     totalSupply: 20000,
     outstanding: 15000,
     issuer: 'Marinade DAO',
     paymentFrequency: 'Monthly',
     minInvestment: 50,
     rating: 'AA',
+    liquidationThreshold: 120,
+    riskScore: 'Medium',
   },
   {
     id: '3',
@@ -79,14 +91,18 @@ const MOCK_BONDS = [
     yieldType: 'Fixed',
     collateral: 400000,
     collateralToken: 'RAY',
+    collateralRatio: 160,
     volume24h: 890000,
     maturity: '2025-09-15',
+    duration: 3,
     totalSupply: 15000,
     outstanding: 12000,
     issuer: 'Raydium Labs',
-    paymentFrequency: 'Semi-Annual',
+    paymentFrequency: 'Monthly',
     minInvestment: 75,
     rating: 'A',
+    liquidationThreshold: 120,
+    riskScore: 'Medium',
   },
   {
     id: '4',
@@ -101,14 +117,18 @@ const MOCK_BONDS = [
     yieldType: 'Variable',
     collateral: 150000,
     collateralToken: 'USDC',
+    collateralRatio: 140,
     volume24h: 560000,
     maturity: '2026-03-01',
+    duration: 3,
     totalSupply: 50000,
     outstanding: 35000,
     issuer: 'Drift Labs',
     paymentFrequency: 'Monthly',
     minInvestment: 25,
     rating: 'BBB',
+    liquidationThreshold: 120,
+    riskScore: 'High',
   },
   {
     id: '5',
@@ -123,14 +143,18 @@ const MOCK_BONDS = [
     yieldType: 'Fixed',
     collateral: 1000000,
     collateralToken: 'SOL',
+    collateralRatio: 200,
     volume24h: 3200000,
     maturity: '2027-01-01',
+    duration: 12,
     totalSupply: 5000,
     outstanding: 3000,
     issuer: 'Tensor Foundation',
     paymentFrequency: 'Quarterly',
     minInvestment: 200,
     rating: 'AAA',
+    liquidationThreshold: 120,
+    riskScore: 'Low',
   },
 ]
 
@@ -300,17 +324,17 @@ function HomePage({
             {
               icon: Shield,
               title: 'Collateralized',
-              description: 'Every bond can be backed by on-chain collateral, providing security for investors.',
+              description: 'Every bond can be backed by on-chain collateral (SOL, USDC, or project tokens), providing security for investors.',
             },
             {
               icon: TrendingUp,
               title: 'Real Yields',
-              description: 'Earn fixed or variable yields paid directly to your wallet on a schedule.',
+              description: 'Earn fixed or variable yields based on collateral ratio, duration, and risk profile. Paid directly to your wallet.',
             },
             {
               icon: Zap,
               title: 'Instant Settlement',
-              description: 'Trade bonds 24/7 with instant settlement on Solana.',
+              description: 'Trade bonds 24/7 with instant settlement on Solana. Full liquidation protection built-in.',
             },
           ].map((feature) => (
             <div key={feature.title} className="glass rounded-2xl p-8 bond-card">
@@ -347,8 +371,8 @@ function HomePage({
                 <th className="pb-4 font-medium">Price</th>
                 <th className="pb-4 font-medium">Yield</th>
                 <th className="pb-4 font-medium">Collateral</th>
-                <th className="pb-4 font-medium">24h Volume</th>
-                <th className="pb-4 font-medium">Maturity</th>
+                <th className="pb-4 font-medium">Duration</th>
+                <th className="pb-4 font-medium">Risk</th>
                 <th className="pb-4 font-medium"></th>
               </tr>
             </thead>
@@ -381,10 +405,18 @@ function HomePage({
                     </span>
                   </td>
                   <td className="py-5 font-mono">
-                    {(bond.collateral / 1000).toFixed(0)}K {bond.collateralToken}
+                    {bond.collateralRatio}% ({bond.collateralToken})
                   </td>
-                  <td className="py-5 font-mono">${(bond.volume24h / 1000000).toFixed(2)}M</td>
-                  <td className="py-5 text-gray-400">{bond.maturity}</td>
+                  <td className="py-5 text-gray-400">{bond.duration}mo</td>
+                  <td className="py-5">
+                    <span className={`px-2 py-1 rounded text-xs ${
+                      bond.riskScore === 'Low' ? 'bg-btrust-green/20 text-btrust-green' :
+                      bond.riskScore === 'Medium' ? 'bg-btrust-gold/20 text-btrust-gold' :
+                      'bg-btrust-red/20 text-btrust-red'
+                    }`}>
+                      {bond.riskScore}
+                    </span>
+                  </td>
                   <td className="py-5">
                     <button className="text-btrust-accent hover:text-white transition-colors">
                       <ChevronRight size={20} />
@@ -491,17 +523,23 @@ function TradePage({
               </div>
               <div>
                 <div className="text-gray-500 text-sm">Collateral</div>
-                <div className="font-mono text-sm">{(bond.collateral / 1000).toFixed(0)}K</div>
+                <div className="font-mono text-sm">{bond.collateralRatio}%</div>
               </div>
               <div>
-                <div className="text-gray-500 text-sm">Maturity</div>
-                <div className="font-mono text-sm">{bond.maturity}</div>
+                <div className="text-gray-500 text-sm">Duration</div>
+                <div className="font-mono text-sm">{bond.duration} months</div>
               </div>
             </div>
 
             <div className="flex items-center justify-between pt-4 border-t border-white/5">
-              <div className="text-sm text-gray-500">
-                {bond.outstanding.toLocaleString()} / {bond.totalSupply.toLocaleString()} issued
+              <div className="flex items-center gap-2">
+                <span className={`px-2 py-0.5 rounded text-xs ${
+                  bond.riskScore === 'Low' ? 'bg-btrust-green/20 text-btrust-green' :
+                  bond.riskScore === 'Medium' ? 'bg-btrust-gold/20 text-btrust-gold' :
+                  'bg-btrust-red/20 text-btrust-red'
+                }`}>
+                  {bond.riskScore} Risk
+                </span>
               </div>
               <div className="w-20 h-2 bg-btrust-dark rounded-full overflow-hidden">
                 <div 
@@ -517,60 +555,155 @@ function TradePage({
   )
 }
 
-// Deploy Page Component
+// Deploy Page Component - COMPLETELY REDESIGNED
 function DeployPage() {
   const [step, setStep] = useState(1)
+  const [imagePreview, setImagePreview] = useState<string | null>(null)
   const [formData, setFormData] = useState({
+    // Step 1: Project Info
     name: '',
     symbol: '',
     description: '',
     website: '',
     twitter: '',
+    discord: '',
+    imageFile: null as File | null,
+    
+    // Step 2: Bond Terms
     principalAmount: '',
-    couponRate: '',
-    yieldType: 'fixed',
-    paymentFrequency: 'quarterly',
-    maturityDate: '',
-    totalSupply: '',
+    duration: '3', // 1, 3, 6, 12 months
     isCapped: true,
+    totalSupply: '',
+    paymentFrequency: 'monthly',
+    
+    // Step 3: Collateral & Yield
+    collateralType: 'SOL', // SOL, USDC, or custom token
+    customTokenMint: '',
     collateralAmount: '',
-    collateralToken: 'SOL',
+    
+    // Calculated fields
+    calculatedYield: 0,
+    calculatedRisk: 'Medium' as 'Low' | 'Medium' | 'High',
   })
 
+  // Calculate yield based on TradFi bond pricing factors
+  const calculateYield = () => {
+    const collateralRatio = formData.collateralAmount && formData.principalAmount && formData.totalSupply
+      ? (parseFloat(formData.collateralAmount) * 100) / (parseFloat(formData.principalAmount) * parseFloat(formData.totalSupply) / 100)
+      : 0
+    
+    const durationMonths = parseInt(formData.duration)
+    
+    // Base rate (similar to risk-free rate in TradFi)
+    let baseRate = 4.0
+    
+    // Duration premium (longer = higher yield, like yield curve)
+    const durationPremium = durationMonths <= 1 ? 0 : durationMonths <= 3 ? 1.5 : durationMonths <= 6 ? 2.5 : 4.0
+    
+    // Collateral discount (more collateral = lower yield needed to attract investors)
+    const collateralDiscount = collateralRatio >= 200 ? -2.0 : collateralRatio >= 150 ? -1.0 : collateralRatio >= 120 ? 0 : 2.0
+    
+    // Credit spread based on collateral type
+    const creditSpread = formData.collateralType === 'USDC' ? 0 : formData.collateralType === 'SOL' ? 1.0 : 3.0
+    
+    const totalYield = Math.max(2, baseRate + durationPremium + collateralDiscount + creditSpread)
+    
+    // Risk score
+    let risk: 'Low' | 'Medium' | 'High' = 'Medium'
+    if (collateralRatio >= 175 && formData.collateralType !== 'custom') risk = 'Low'
+    else if (collateralRatio < 130 || formData.collateralType === 'custom') risk = 'High'
+    
+    return { yield: Math.round(totalYield * 100) / 100, risk }
+  }
+
+  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (file) {
+      setFormData({ ...formData, imageFile: file })
+      const reader = new FileReader()
+      reader.onloadend = () => {
+        setImagePreview(reader.result as string)
+      }
+      reader.readAsDataURL(file)
+    }
+  }
+
+  const yieldData = calculateYield()
+
+  const collateralRatio = formData.collateralAmount && formData.principalAmount && formData.totalSupply
+    ? (parseFloat(formData.collateralAmount) * (formData.collateralType === 'SOL' ? 100 : 1)) / (parseFloat(formData.principalAmount) * parseFloat(formData.totalSupply) / 100)
+    : 0
+
   return (
-    <section className="max-w-3xl mx-auto px-6">
+    <section className="max-w-4xl mx-auto px-6">
       <div className="mb-8">
-        <h1 className="font-display text-4xl font-bold mb-2">Deploy a Bond</h1>
-        <p className="text-gray-400">Issue on-chain bonds for your project or protocol</p>
+        <h1 className="font-display text-4xl font-bold mb-2">Deploy an On-Chain Bond</h1>
+        <p className="text-gray-400">Issue collateralized bonds for your project. Yield is calculated automatically based on your terms.</p>
       </div>
 
       {/* Progress Steps */}
       <div className="flex items-center gap-4 mb-12">
-        {[1, 2, 3].map((s) => (
-          <div key={s} className="flex items-center gap-2">
+        {[
+          { num: 1, label: 'Project Info' },
+          { num: 2, label: 'Bond Terms' },
+          { num: 3, label: 'Collateral' },
+          { num: 4, label: 'Review & Deploy' },
+        ].map((s, i) => (
+          <div key={s.num} className="flex items-center gap-2">
             <div className={`w-10 h-10 rounded-full flex items-center justify-center font-semibold ${
-              step >= s 
+              step >= s.num 
                 ? 'bg-gradient-to-r from-btrust-accent to-btrust-accent2 text-btrust-darker' 
                 : 'bg-btrust-dark text-gray-500'
             }`}>
-              {s}
+              {step > s.num ? <CheckCircle size={20} /> : s.num}
             </div>
-            <span className={step >= s ? 'text-white' : 'text-gray-500'}>
-              {s === 1 ? 'Details' : s === 2 ? 'Terms' : 'Collateral'}
+            <span className={`hidden md:block ${step >= s.num ? 'text-white' : 'text-gray-500'}`}>
+              {s.label}
             </span>
-            {s < 3 && <div className="w-12 h-0.5 bg-btrust-dark" />}
+            {i < 3 && <div className="w-8 md:w-12 h-0.5 bg-btrust-dark" />}
           </div>
         ))}
       </div>
 
       <div className="glass rounded-2xl p-8">
+        {/* Step 1: Project Info */}
         {step === 1 && (
           <div className="space-y-6">
-            <h2 className="text-xl font-semibold mb-6">Bond Details</h2>
+            <h2 className="text-xl font-semibold mb-6">Project Information</h2>
             
+            {/* Image Upload */}
+            <div>
+              <label className="block text-sm text-gray-400 mb-2">Project Logo / Image</label>
+              <div className="flex items-center gap-6">
+                <div 
+                  className={`w-24 h-24 rounded-xl border-2 border-dashed flex items-center justify-center cursor-pointer transition-colors ${
+                    imagePreview ? 'border-btrust-accent' : 'border-white/20 hover:border-white/40'
+                  }`}
+                  onClick={() => document.getElementById('imageUpload')?.click()}
+                >
+                  {imagePreview ? (
+                    <img src={imagePreview} alt="Preview" className="w-full h-full object-cover rounded-xl" />
+                  ) : (
+                    <Upload className="text-gray-500" size={32} />
+                  )}
+                </div>
+                <div className="text-sm text-gray-400">
+                  <p>Upload a logo or image for your bond</p>
+                  <p className="text-xs mt-1">PNG, JPG up to 2MB</p>
+                </div>
+                <input
+                  id="imageUpload"
+                  type="file"
+                  accept="image/*"
+                  onChange={handleImageUpload}
+                  className="hidden"
+                />
+              </div>
+            </div>
+
             <div className="grid md:grid-cols-2 gap-6">
               <div>
-                <label className="block text-sm text-gray-400 mb-2">Bond Name</label>
+                <label className="block text-sm text-gray-400 mb-2">Bond Name *</label>
                 <input
                   type="text"
                   placeholder="e.g., Jupiter Exchange Bond"
@@ -580,21 +713,21 @@ function DeployPage() {
                 />
               </div>
               <div>
-                <label className="block text-sm text-gray-400 mb-2">Symbol</label>
+                <label className="block text-sm text-gray-400 mb-2">Symbol *</label>
                 <input
                   type="text"
                   placeholder="e.g., JUP-BOND"
                   value={formData.symbol}
-                  onChange={(e) => setFormData({...formData, symbol: e.target.value})}
+                  onChange={(e) => setFormData({...formData, symbol: e.target.value.toUpperCase()})}
                   className="w-full bg-btrust-dark border border-white/10 rounded-lg px-4 py-3 focus:border-btrust-accent focus:outline-none"
                 />
               </div>
             </div>
 
             <div>
-              <label className="block text-sm text-gray-400 mb-2">Description</label>
+              <label className="block text-sm text-gray-400 mb-2">Description *</label>
               <textarea
-                placeholder="Describe your bond offering and how the funds will be used..."
+                placeholder="Describe your project and how bond proceeds will be used..."
                 value={formData.description}
                 onChange={(e) => setFormData({...formData, description: e.target.value})}
                 rows={4}
@@ -602,7 +735,7 @@ function DeployPage() {
               />
             </div>
 
-            <div className="grid md:grid-cols-2 gap-6">
+            <div className="grid md:grid-cols-3 gap-6">
               <div>
                 <label className="block text-sm text-gray-400 mb-2">Website</label>
                 <input
@@ -623,17 +756,54 @@ function DeployPage() {
                   className="w-full bg-btrust-dark border border-white/10 rounded-lg px-4 py-3 focus:border-btrust-accent focus:outline-none"
                 />
               </div>
+              <div>
+                <label className="block text-sm text-gray-400 mb-2">Discord</label>
+                <input
+                  type="text"
+                  placeholder="discord.gg/yourserver"
+                  value={formData.discord}
+                  onChange={(e) => setFormData({...formData, discord: e.target.value})}
+                  className="w-full bg-btrust-dark border border-white/10 rounded-lg px-4 py-3 focus:border-btrust-accent focus:outline-none"
+                />
+              </div>
             </div>
           </div>
         )}
 
+        {/* Step 2: Bond Terms */}
         {step === 2 && (
           <div className="space-y-6">
             <h2 className="text-xl font-semibold mb-6">Bond Terms</h2>
             
+            {/* Duration Selection */}
+            <div>
+              <label className="block text-sm text-gray-400 mb-3">Bond Duration *</label>
+              <div className="grid grid-cols-4 gap-4">
+                {[
+                  { value: '1', label: '1 Month', desc: 'Short-term' },
+                  { value: '3', label: '3 Months', desc: 'Quarterly' },
+                  { value: '6', label: '6 Months', desc: 'Semi-annual' },
+                  { value: '12', label: '12 Months', desc: 'Annual' },
+                ].map((d) => (
+                  <button
+                    key={d.value}
+                    onClick={() => setFormData({...formData, duration: d.value})}
+                    className={`p-4 rounded-xl border text-center transition-all ${
+                      formData.duration === d.value
+                        ? 'border-btrust-accent bg-btrust-accent/10'
+                        : 'border-white/10 hover:border-white/30'
+                    }`}
+                  >
+                    <div className="font-semibold">{d.label}</div>
+                    <div className="text-xs text-gray-500 mt-1">{d.desc}</div>
+                  </button>
+                ))}
+              </div>
+            </div>
+
             <div className="grid md:grid-cols-2 gap-6">
               <div>
-                <label className="block text-sm text-gray-400 mb-2">Principal Amount (USDC)</label>
+                <label className="block text-sm text-gray-400 mb-2">Face Value per Bond (USDC) *</label>
                 <input
                   type="number"
                   placeholder="1000"
@@ -641,60 +811,10 @@ function DeployPage() {
                   onChange={(e) => setFormData({...formData, principalAmount: e.target.value})}
                   className="w-full bg-btrust-dark border border-white/10 rounded-lg px-4 py-3 focus:border-btrust-accent focus:outline-none"
                 />
-                <p className="text-xs text-gray-500 mt-1">Face value of each bond</p>
+                <p className="text-xs text-gray-500 mt-1">The amount each bond is worth at maturity</p>
               </div>
               <div>
-                <label className="block text-sm text-gray-400 mb-2">Coupon Rate (%)</label>
-                <input
-                  type="number"
-                  placeholder="8.5"
-                  value={formData.couponRate}
-                  onChange={(e) => setFormData({...formData, couponRate: e.target.value})}
-                  className="w-full bg-btrust-dark border border-white/10 rounded-lg px-4 py-3 focus:border-btrust-accent focus:outline-none"
-                />
-                <p className="text-xs text-gray-500 mt-1">Annual yield paid to holders</p>
-              </div>
-            </div>
-
-            <div className="grid md:grid-cols-2 gap-6">
-              <div>
-                <label className="block text-sm text-gray-400 mb-2">Yield Type</label>
-                <select
-                  value={formData.yieldType}
-                  onChange={(e) => setFormData({...formData, yieldType: e.target.value})}
-                  className="w-full bg-btrust-dark border border-white/10 rounded-lg px-4 py-3 focus:border-btrust-accent focus:outline-none"
-                >
-                  <option value="fixed">Fixed Rate</option>
-                  <option value="variable">Variable Rate</option>
-                </select>
-              </div>
-              <div>
-                <label className="block text-sm text-gray-400 mb-2">Payment Frequency</label>
-                <select
-                  value={formData.paymentFrequency}
-                  onChange={(e) => setFormData({...formData, paymentFrequency: e.target.value})}
-                  className="w-full bg-btrust-dark border border-white/10 rounded-lg px-4 py-3 focus:border-btrust-accent focus:outline-none"
-                >
-                  <option value="monthly">Monthly</option>
-                  <option value="quarterly">Quarterly</option>
-                  <option value="semiannual">Semi-Annual</option>
-                  <option value="annual">Annual</option>
-                </select>
-              </div>
-            </div>
-
-            <div className="grid md:grid-cols-2 gap-6">
-              <div>
-                <label className="block text-sm text-gray-400 mb-2">Maturity Date</label>
-                <input
-                  type="date"
-                  value={formData.maturityDate}
-                  onChange={(e) => setFormData({...formData, maturityDate: e.target.value})}
-                  className="w-full bg-btrust-dark border border-white/10 rounded-lg px-4 py-3 focus:border-btrust-accent focus:outline-none"
-                />
-              </div>
-              <div>
-                <label className="block text-sm text-gray-400 mb-2">Total Supply</label>
+                <label className="block text-sm text-gray-400 mb-2">Total Bonds to Issue *</label>
                 <input
                   type="number"
                   placeholder="10000"
@@ -702,90 +822,283 @@ function DeployPage() {
                   onChange={(e) => setFormData({...formData, totalSupply: e.target.value})}
                   className="w-full bg-btrust-dark border border-white/10 rounded-lg px-4 py-3 focus:border-btrust-accent focus:outline-none"
                 />
-              </div>
-            </div>
-
-            <div className="flex items-center gap-3">
-              <input
-                type="checkbox"
-                id="capped"
-                checked={formData.isCapped}
-                onChange={(e) => setFormData({...formData, isCapped: e.target.checked})}
-                className="w-5 h-5 rounded bg-btrust-dark border border-white/10"
-              />
-              <label htmlFor="capped" className="text-sm">
-                Capped offering (limit total bonds issued)
-              </label>
-            </div>
-          </div>
-        )}
-
-        {step === 3 && (
-          <div className="space-y-6">
-            <h2 className="text-xl font-semibold mb-6">Collateral</h2>
-            
-            <div className="bg-btrust-accent/10 border border-btrust-accent/20 rounded-lg p-4 mb-6">
-              <div className="flex items-start gap-3">
-                <Shield className="text-btrust-accent mt-0.5" size={20} />
-                <div>
-                  <p className="font-medium text-btrust-accent">Collateral builds trust</p>
-                  <p className="text-sm text-gray-400 mt-1">
-                    Bonds with collateral attract more investors. If the collateral ratio falls below 120%, 
-                    the bond may be liquidated to protect investors.
-                  </p>
-                </div>
+                <p className="text-xs text-gray-500 mt-1">
+                  Total raise: ${formData.principalAmount && formData.totalSupply 
+                    ? (parseFloat(formData.principalAmount) * parseFloat(formData.totalSupply)).toLocaleString() 
+                    : '0'}
+                </p>
               </div>
             </div>
 
             <div className="grid md:grid-cols-2 gap-6">
               <div>
-                <label className="block text-sm text-gray-400 mb-2">Collateral Token</label>
-                <select
-                  value={formData.collateralToken}
-                  onChange={(e) => setFormData({...formData, collateralToken: e.target.value})}
-                  className="w-full bg-btrust-dark border border-white/10 rounded-lg px-4 py-3 focus:border-btrust-accent focus:outline-none"
-                >
-                  <option value="SOL">SOL</option>
-                  <option value="USDC">USDC</option>
-                  <option value="mSOL">mSOL</option>
-                  <option value="JitoSOL">JitoSOL</option>
-                </select>
+                <label className="block text-sm text-gray-400 mb-2">Offering Type</label>
+                <div className="flex gap-4">
+                  <button
+                    onClick={() => setFormData({...formData, isCapped: true})}
+                    className={`flex-1 p-4 rounded-xl border text-center transition-all ${
+                      formData.isCapped
+                        ? 'border-btrust-accent bg-btrust-accent/10'
+                        : 'border-white/10 hover:border-white/30'
+                    }`}
+                  >
+                    <div className="font-semibold">Capped</div>
+                    <div className="text-xs text-gray-500 mt-1">Fixed supply</div>
+                  </button>
+                  <button
+                    onClick={() => setFormData({...formData, isCapped: false})}
+                    className={`flex-1 p-4 rounded-xl border text-center transition-all ${
+                      !formData.isCapped
+                        ? 'border-btrust-accent bg-btrust-accent/10'
+                        : 'border-white/10 hover:border-white/30'
+                    }`}
+                  >
+                    <div className="font-semibold">Uncapped</div>
+                    <div className="text-xs text-gray-500 mt-1">Open-ended</div>
+                  </button>
+                </div>
               </div>
               <div>
-                <label className="block text-sm text-gray-400 mb-2">Collateral Amount</label>
-                <input
-                  type="number"
-                  placeholder="500"
-                  value={formData.collateralAmount}
-                  onChange={(e) => setFormData({...formData, collateralAmount: e.target.value})}
+                <label className="block text-sm text-gray-400 mb-2">Yield Payment Frequency</label>
+                <select
+                  value={formData.paymentFrequency}
+                  onChange={(e) => setFormData({...formData, paymentFrequency: e.target.value})}
                   className="w-full bg-btrust-dark border border-white/10 rounded-lg px-4 py-3 focus:border-btrust-accent focus:outline-none"
-                />
+                >
+                  <option value="monthly">Monthly</option>
+                  <option value="quarterly">Quarterly</option>
+                  <option value="maturity">At Maturity</option>
+                </select>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Step 3: Collateral */}
+        {step === 3 && (
+          <div className="space-y-6">
+            <h2 className="text-xl font-semibold mb-2">Collateral Deposit</h2>
+            <p className="text-gray-400 mb-6">
+              Collateral secures your bond and determines the yield. Higher collateral = lower yield required = more investor trust.
+            </p>
+
+            {/* Collateral Type Selection */}
+            <div>
+              <label className="block text-sm text-gray-400 mb-3">Collateral Token *</label>
+              <div className="grid grid-cols-3 gap-4">
+                {[
+                  { value: 'SOL', label: 'SOL', desc: 'Native Solana', icon: '◎' },
+                  { value: 'USDC', label: 'USDC', desc: 'Stablecoin', icon: '$' },
+                  { value: 'custom', label: 'Project Token', desc: 'Your token', icon: '🪙' },
+                ].map((t) => (
+                  <button
+                    key={t.value}
+                    onClick={() => setFormData({...formData, collateralType: t.value})}
+                    className={`p-4 rounded-xl border text-center transition-all ${
+                      formData.collateralType === t.value
+                        ? 'border-btrust-accent bg-btrust-accent/10'
+                        : 'border-white/10 hover:border-white/30'
+                    }`}
+                  >
+                    <div className="text-2xl mb-2">{t.icon}</div>
+                    <div className="font-semibold">{t.label}</div>
+                    <div className="text-xs text-gray-500 mt-1">{t.desc}</div>
+                  </button>
+                ))}
               </div>
             </div>
 
+            {formData.collateralType === 'custom' && (
+              <div>
+                <label className="block text-sm text-gray-400 mb-2">Token Mint Address *</label>
+                <input
+                  type="text"
+                  placeholder="Enter your SPL token mint address"
+                  value={formData.customTokenMint}
+                  onChange={(e) => setFormData({...formData, customTokenMint: e.target.value})}
+                  className="w-full bg-btrust-dark border border-white/10 rounded-lg px-4 py-3 focus:border-btrust-accent focus:outline-none font-mono text-sm"
+                />
+              </div>
+            )}
+
+            <div>
+              <label className="block text-sm text-gray-400 mb-2">
+                Collateral Amount ({formData.collateralType === 'custom' ? 'Tokens' : formData.collateralType}) *
+              </label>
+              <input
+                type="number"
+                placeholder={formData.collateralType === 'SOL' ? '500' : formData.collateralType === 'USDC' ? '50000' : '1000000'}
+                value={formData.collateralAmount}
+                onChange={(e) => setFormData({...formData, collateralAmount: e.target.value})}
+                className="w-full bg-btrust-dark border border-white/10 rounded-lg px-4 py-3 focus:border-btrust-accent focus:outline-none"
+              />
+            </div>
+
+            {/* Yield Calculation Display */}
             {formData.collateralAmount && formData.principalAmount && formData.totalSupply && (
-              <div className="bg-btrust-dark rounded-lg p-6">
-                <h3 className="font-medium mb-4">Collateral Summary</h3>
-                <div className="grid grid-cols-2 gap-4 text-sm">
+              <div className="bg-btrust-dark rounded-xl p-6 space-y-4">
+                <h3 className="font-semibold flex items-center gap-2">
+                  <BarChart3 size={18} className="text-btrust-accent" />
+                  Calculated Bond Metrics
+                </h3>
+                
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                   <div>
-                    <div className="text-gray-500">Total Bond Value</div>
-                    <div className="font-mono">${(Number(formData.principalAmount) * Number(formData.totalSupply)).toLocaleString()}</div>
+                    <div className="text-gray-500 text-sm">Collateral Ratio</div>
+                    <div className={`font-mono text-xl ${
+                      collateralRatio >= 150 ? 'text-btrust-green' : 
+                      collateralRatio >= 120 ? 'text-btrust-gold' : 'text-btrust-red'
+                    }`}>
+                      {collateralRatio.toFixed(0)}%
+                    </div>
                   </div>
                   <div>
-                    <div className="text-gray-500">Collateral Value</div>
-                    <div className="font-mono">{formData.collateralAmount} {formData.collateralToken}</div>
+                    <div className="text-gray-500 text-sm">Suggested Yield</div>
+                    <div className="font-mono text-xl text-btrust-accent">{yieldData.yield}%</div>
                   </div>
                   <div>
-                    <div className="text-gray-500">Collateral Ratio</div>
-                    <div className="font-mono text-btrust-green">~150%</div>
+                    <div className="text-gray-500 text-sm">Risk Rating</div>
+                    <div className={`font-semibold ${
+                      yieldData.risk === 'Low' ? 'text-btrust-green' :
+                      yieldData.risk === 'Medium' ? 'text-btrust-gold' : 'text-btrust-red'
+                    }`}>
+                      {yieldData.risk}
+                    </div>
                   </div>
                   <div>
-                    <div className="text-gray-500">Liquidation Threshold</div>
-                    <div className="font-mono text-btrust-gold">120%</div>
+                    <div className="text-gray-500 text-sm">Liquidation At</div>
+                    <div className="font-mono text-xl text-btrust-gold">120%</div>
+                  </div>
+                </div>
+
+                {/* Yield Explanation */}
+                <div className="bg-btrust-darker/50 rounded-lg p-4 text-sm">
+                  <div className="flex items-start gap-2">
+                    <Info size={16} className="text-btrust-accent mt-0.5 flex-shrink-0" />
+                    <div className="text-gray-400">
+                      <strong className="text-white">How yield is calculated:</strong> Base rate (4%) + Duration premium ({parseInt(formData.duration) <= 1 ? '0%' : parseInt(formData.duration) <= 3 ? '1.5%' : parseInt(formData.duration) <= 6 ? '2.5%' : '4%'}) + Collateral adjustment + Credit spread. Higher collateral and stablecoin backing reduce required yield.
+                    </div>
+                  </div>
+                </div>
+
+                {/* Liquidation Warning */}
+                {collateralRatio < 150 && (
+                  <div className="bg-btrust-red/10 border border-btrust-red/30 rounded-lg p-4">
+                    <div className="flex items-start gap-2">
+                      <AlertTriangle size={16} className="text-btrust-red mt-0.5 flex-shrink-0" />
+                      <div className="text-sm">
+                        <strong className="text-btrust-red">Low Collateral Warning:</strong>
+                        <span className="text-gray-400"> Your collateral ratio is below 150%. If it drops below 120%, your bond may be liquidated to protect investors. Consider adding more collateral.</span>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Step 4: Review & Deploy */}
+        {step === 4 && (
+          <div className="space-y-6">
+            <h2 className="text-xl font-semibold mb-6">Review & Deploy</h2>
+
+            {/* Summary Card */}
+            <div className="bg-btrust-dark rounded-xl p-6">
+              <div className="flex items-center gap-4 mb-6 pb-6 border-b border-white/10">
+                {imagePreview ? (
+                  <img src={imagePreview} alt="Bond" className="w-16 h-16 rounded-xl object-cover" />
+                ) : (
+                  <div className="w-16 h-16 rounded-xl bg-btrust-darker flex items-center justify-center text-2xl">
+                    🏦
+                  </div>
+                )}
+                <div>
+                  <h3 className="text-xl font-bold">{formData.name || 'Your Bond'}</h3>
+                  <div className="text-gray-500">{formData.symbol || 'SYMBOL'}</div>
+                </div>
+                <div className="ml-auto text-right">
+                  <div className="text-2xl font-bold text-btrust-green">{yieldData.yield}% APY</div>
+                  <div className={`text-sm ${
+                    yieldData.risk === 'Low' ? 'text-btrust-green' :
+                    yieldData.risk === 'Medium' ? 'text-btrust-gold' : 'text-btrust-red'
+                  }`}>
+                    {yieldData.risk} Risk
                   </div>
                 </div>
               </div>
-            )}
+
+              <div className="grid md:grid-cols-2 gap-x-12 gap-y-4 text-sm">
+                <div className="flex justify-between py-2 border-b border-white/5">
+                  <span className="text-gray-500">Face Value</span>
+                  <span className="font-mono">${formData.principalAmount || '0'} USDC</span>
+                </div>
+                <div className="flex justify-between py-2 border-b border-white/5">
+                  <span className="text-gray-500">Total Supply</span>
+                  <span className="font-mono">{formData.totalSupply || '0'} bonds</span>
+                </div>
+                <div className="flex justify-between py-2 border-b border-white/5">
+                  <span className="text-gray-500">Total Raise</span>
+                  <span className="font-mono">${formData.principalAmount && formData.totalSupply 
+                    ? (parseFloat(formData.principalAmount) * parseFloat(formData.totalSupply)).toLocaleString() 
+                    : '0'}</span>
+                </div>
+                <div className="flex justify-between py-2 border-b border-white/5">
+                  <span className="text-gray-500">Duration</span>
+                  <span>{formData.duration} months</span>
+                </div>
+                <div className="flex justify-between py-2 border-b border-white/5">
+                  <span className="text-gray-500">Collateral</span>
+                  <span className="font-mono">{formData.collateralAmount} {formData.collateralType}</span>
+                </div>
+                <div className="flex justify-between py-2 border-b border-white/5">
+                  <span className="text-gray-500">Collateral Ratio</span>
+                  <span className={`font-mono ${collateralRatio >= 150 ? 'text-btrust-green' : 'text-btrust-gold'}`}>
+                    {collateralRatio.toFixed(0)}%
+                  </span>
+                </div>
+                <div className="flex justify-between py-2 border-b border-white/5">
+                  <span className="text-gray-500">Payment Frequency</span>
+                  <span className="capitalize">{formData.paymentFrequency}</span>
+                </div>
+                <div className="flex justify-between py-2 border-b border-white/5">
+                  <span className="text-gray-500">Liquidation Threshold</span>
+                  <span className="font-mono text-btrust-gold">120%</span>
+                </div>
+                <div className="flex justify-between py-2 border-b border-white/5">
+                  <span className="text-gray-500">Offering Type</span>
+                  <span>{formData.isCapped ? 'Capped' : 'Uncapped'}</span>
+                </div>
+                <div className="flex justify-between py-2 border-b border-white/5">
+                  <span className="text-gray-500">Platform Fee</span>
+                  <span className="font-mono">0.5%</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Warnings */}
+            <div className="bg-btrust-gold/10 border border-btrust-gold/30 rounded-lg p-4">
+              <div className="flex items-start gap-2">
+                <AlertTriangle size={18} className="text-btrust-gold mt-0.5 flex-shrink-0" />
+                <div className="text-sm">
+                  <strong className="text-btrust-gold">Before you deploy:</strong>
+                  <ul className="text-gray-400 mt-2 space-y-1 list-disc list-inside">
+                    <li>Your collateral will be locked in a smart contract until maturity or liquidation</li>
+                    <li>You must fund yield payments on schedule or risk default</li>
+                    <li>If collateral ratio falls below 120%, your bond may be liquidated</li>
+                    <li>This action is irreversible once confirmed on-chain</li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+
+            {/* Terms Checkbox */}
+            <div className="flex items-start gap-3">
+              <input type="checkbox" id="terms" className="mt-1 w-5 h-5 rounded bg-btrust-dark border border-white/10" />
+              <label htmlFor="terms" className="text-sm text-gray-400">
+                I understand the risks and agree to the B Trust terms of service. I confirm that I have the authority to issue this bond on behalf of my project.
+              </label>
+            </div>
           </div>
         )}
 
@@ -802,7 +1115,7 @@ function DeployPage() {
             <div />
           )}
           
-          {step < 3 ? (
+          {step < 4 ? (
             <button
               onClick={() => setStep(step + 1)}
               className="btn-glow px-8 py-3 rounded-lg font-semibold text-btrust-darker"
@@ -812,7 +1125,7 @@ function DeployPage() {
           ) : (
             <button className="btn-glow px-8 py-3 rounded-lg font-semibold text-btrust-darker flex items-center gap-2">
               <Lock size={18} />
-              Deploy Bond
+              Deploy Bond & Lock Collateral
             </button>
           )}
         </div>
@@ -969,7 +1282,11 @@ function BondModal({
                 {bond.yieldType} Rate
               </span>
               <span>•</span>
-              <span className="text-btrust-gold">{bond.rating}</span>
+              <span className={`px-2 py-0.5 rounded text-xs ${
+                bond.riskScore === 'Low' ? 'bg-btrust-green/20 text-btrust-green' :
+                bond.riskScore === 'Medium' ? 'bg-btrust-gold/20 text-btrust-gold' :
+                'bg-btrust-red/20 text-btrust-red'
+              }`}>{bond.riskScore} Risk</span>
             </div>
           </div>
         </div>
@@ -998,8 +1315,8 @@ function BondModal({
             <div className="text-xl font-mono font-semibold text-btrust-green">{bond.yield}% APY</div>
           </div>
           <div className="bg-btrust-dark rounded-lg p-4">
-            <div className="text-gray-500 text-sm mb-1">Maturity</div>
-            <div className="text-xl font-mono font-semibold">{bond.maturity}</div>
+            <div className="text-gray-500 text-sm mb-1">Duration</div>
+            <div className="text-xl font-mono font-semibold">{bond.duration}mo</div>
           </div>
         </div>
 
@@ -1014,8 +1331,16 @@ function BondModal({
             <span>{bond.paymentFrequency}</span>
           </div>
           <div className="flex justify-between">
-            <span className="text-gray-500">Collateral</span>
-            <span>{(bond.collateral / 1000).toFixed(0)}K {bond.collateralToken}</span>
+            <span className="text-gray-500">Collateral Ratio</span>
+            <span className="text-btrust-green">{bond.collateralRatio}%</span>
+          </div>
+          <div className="flex justify-between">
+            <span className="text-gray-500">Collateral Token</span>
+            <span>{bond.collateralToken}</span>
+          </div>
+          <div className="flex justify-between">
+            <span className="text-gray-500">Liquidation Threshold</span>
+            <span className="text-btrust-gold">{bond.liquidationThreshold}%</span>
           </div>
           <div className="flex justify-between">
             <span className="text-gray-500">Min Investment</span>
@@ -1060,4 +1385,3 @@ function BondModal({
     </div>
   )
 }
-
