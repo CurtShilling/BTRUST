@@ -1,0 +1,119 @@
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --btrust-dark: #0a0a0f;
+  --btrust-darker: #050508;
+  --btrust-accent: #00f0ff;
+  --btrust-accent2: #7b61ff;
+  --btrust-gold: #ffd700;
+  --btrust-green: #00ff88;
+  --btrust-red: #ff4757;
+}
+
+* {
+  box-sizing: border-box;
+  padding: 0;
+  margin: 0;
+}
+
+html,
+body {
+  max-width: 100vw;
+  overflow-x: hidden;
+  background: var(--btrust-darker);
+  color: white;
+  font-family: 'JetBrains Mono', monospace;
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--btrust-darker);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--btrust-accent);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--btrust-accent2);
+}
+
+/* Gradient text */
+.gradient-text {
+  background: linear-gradient(135deg, var(--btrust-accent) 0%, var(--btrust-accent2) 50%, var(--btrust-gold) 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* Glass effect */
+.glass {
+  background: rgba(10, 10, 15, 0.8);
+  backdrop-filter: blur(20px);
+  border: 1px solid rgba(0, 240, 255, 0.1);
+}
+
+/* Glow button */
+.btn-glow {
+  background: linear-gradient(135deg, var(--btrust-accent) 0%, var(--btrust-accent2) 100%);
+  box-shadow: 0 0 20px rgba(0, 240, 255, 0.4);
+  transition: all 0.3s ease;
+}
+
+.btn-glow:hover {
+  box-shadow: 0 0 40px rgba(0, 240, 255, 0.6);
+  transform: translateY(-2px);
+}
+
+/* Card hover effect */
+.bond-card {
+  transition: all 0.3s ease;
+  border: 1px solid rgba(0, 240, 255, 0.1);
+}
+
+.bond-card:hover {
+  border-color: var(--btrust-accent);
+  box-shadow: 0 0 30px rgba(0, 240, 255, 0.2);
+  transform: translateY(-4px);
+}
+
+/* Animated background */
+.bg-grid {
+  background-image: 
+    linear-gradient(rgba(0, 240, 255, 0.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0, 240, 255, 0.03) 1px, transparent 1px);
+  background-size: 50px 50px;
+}
+
+/* Pulse animation for live indicators */
+.pulse-live {
+  animation: pulse-live 2s infinite;
+}
+
+@keyframes pulse-live {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
+
+/* Number animations */
+.number-up {
+  color: var(--btrust-green);
+}
+
+.number-down {
+  color: var(--btrust-red);
+}
+
